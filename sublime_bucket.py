@@ -30,14 +30,13 @@ class OpenInBitbucketCommand(sublime_plugin.TextCommand):
             remotes = subprocess.check_output('git remote -v',
                                               cwd=os.path.dirname(full_path),
                                               shell=True).splitlines()
-            bitbucket_pattern = (r'%s[:/]([\w\-]+)/([\w\-]+)\.git' %
-                                 BITBUCKET_HOST)
         except subprocess.CalledProcessError:
             remotes = subprocess.check_output('hg paths',
                                               cwd=os.path.dirname(full_path),
                                               shell=True).splitlines()
-            bitbucket_pattern = r'%s/([\w\-]+)/([\w\-]+)' % BITBUCKET_HOST
 
+        bitbucket_pattern = (r'%s[:/]([\w\-]+)/([\w\-]+)(?:\.git)?' %
+                             BITBUCKET_HOST)
         for remote in remotes:
             remote_match = re.search(bitbucket_pattern, str(remote))
             if remote_match:
