@@ -74,6 +74,8 @@ class OpenInBitbucketCommand(sublime_plugin.TextCommand):
         ranges = []
 
         for (start, end) in self.view.sel():
+            # Sublime provides 0-based line numbers but Bitbucket line numbers
+            # start with 1.
             first_line = self.view.rowcol(start)[0] + 1
             last_line = self.view.rowcol(end)[0] + 1
 
