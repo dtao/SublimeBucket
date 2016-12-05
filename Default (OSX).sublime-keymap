@@ -1,0 +1,6 @@
+[
+  {
+    "keys": ["super+shift+b"],
+    "command": "open_in_bitbucket"
+  }
+]

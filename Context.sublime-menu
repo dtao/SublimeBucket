@@ -1,0 +1,13 @@
+[
+  {
+    "caption": "Bitbucket",
+    "id": "bitbucket-options",
+    "children": [
+      {
+        "caption": "Open in Bitbucket",
+        "id": "bitbucket-open-file",
+        "command": "open_in_bitbucket"
+      }
+    ]
+  }
+]
