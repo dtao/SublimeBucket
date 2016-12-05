@@ -23,12 +23,21 @@ class OpenInBitbucketCommand(sublime_plugin.TextCommand):
         """Get the Bitbucket repo (username/repo_slug) for the current file.
 
         This method works by invoking `git remote -v` and inspecting the output
-        for a line containing BITBUCKET_HOST.
+        for a line containing BITBUCKET_HOST. If this command fails, it tries
+        again with `hg paths` for Mercurial repositories.
         """
-        remotes = subprocess.check_output('git remote -v',
-                                          cwd=os.path.dirname(full_path),
-                                          shell=True).splitlines()
-        bitbucket_pattern = r'%s[:/]([\w\-]+)/([\w\-]+)\.git' % BITBUCKET_HOST
+        try:
+            remotes = subprocess.check_output('git remote -v',
+                                              cwd=os.path.dirname(full_path),
+                                              shell=True).splitlines()
+            bitbucket_pattern = (r'%s[:/]([\w\-]+)/([\w\-]+)\.git' %
+                                 BITBUCKET_HOST)
+        except subprocess.CalledProcessError:
+            remotes = subprocess.check_output('hg paths',
+                                              cwd=os.path.dirname(full_path),
+                                              shell=True).splitlines()
+            bitbucket_pattern = r'%s/([\w\-]+)/([\w\-]+)' % BITBUCKET_HOST
+
         for remote in remotes:
             remote_match = re.search(bitbucket_pattern, str(remote))
             if remote_match:
@@ -38,14 +47,22 @@ class OpenInBitbucketCommand(sublime_plugin.TextCommand):
         """Get the hash of the commit/changeset that's currently checked out.
 
         This method works by invoking `git show HEAD` and parsing the output.
+        If that fails, it tries again with `hg id -i` for Mercurial
+        repositories.
         """
-        info = subprocess.check_output('git show HEAD',
-                                       cwd=os.path.dirname(full_path),
-                                       shell=True).splitlines()
-        for line in info:
-            revision_match = re.search(r'commit (\w+)', str(line))
-            if revision_match:
-                return revision_match.group(1)
+        try:
+            info = subprocess.check_output('git show HEAD',
+                                           cwd=os.path.dirname(full_path),
+                                           shell=True).splitlines()
+            for line in info:
+                revision_match = re.search(r'commit (\w+)', str(line))
+                if revision_match:
+                    return revision_match.group(1)
+        except subprocess.CalledProcessError:
+            revision = subprocess.check_output('hg id -i',
+                                               cwd=os.path.dirname(full_path),
+                                               shell=True).splitlines()[0]
+            return revision.decode('utf-8')
 
     def get_file_path(self, full_path):
         """Get the path to the current file, relative to the repository root.

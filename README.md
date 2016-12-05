@@ -11,5 +11,3 @@ Bitbucket plugin for Sublime Text 3
     [
         { "keys": ["super+shift+b"], "command": "open_in_bitbucket" }
     ]
-
-Currently this only supports Git because I'm lazy.
