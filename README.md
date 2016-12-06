@@ -2,12 +2,17 @@
 
 Bitbucket plugin for Sublime Text 3
 
-## How to use
+## Commands
 
-1. Put sublime_bucket.py in your packages folder,
-   e.g. /Users/dtao/Library/Application Support/Sublime Text 3/Packages/User
-2. Maybe add a keyboard shortcut like this or something:
+### 1. open_in_bitbucket (Git + Hg)
 
-    [
-        { "keys": ["super+shift+b"], "command": "open_in_bitbucket" }
-    ]
+Opens the selected line(s) in Bitbucket, preserving all highlighted ranges.
+
+Default shortcut: `super/ctrl`+`shift`+`b`
+
+### 2. find_bitbucket_pull_request (Git only)
+
+Looks up the commit where the current line was last changed and opens the pull
+request where that change was introduced.
+
+Default shortcut: `super/ctrl`+`shift`+`p`
