@@ -7,6 +7,11 @@
         "caption": "Open in Bitbucket",
         "id": "bitbucket-open-file",
         "command": "open_in_bitbucket"
+      },
+      {
+        "caption": "Find Bitbucket Pull Request",
+        "id": "bitbucket-find-pull-request",
+        "command": "find_bitbucket_pull_request"
       }
     ]
   }
