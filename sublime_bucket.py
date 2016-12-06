@@ -4,6 +4,7 @@ import sublime_plugin
 import subprocess
 
 BITBUCKET_HOST = 'bitbucket.org'
+TEXT_ENCODING = 'utf-8'
 
 
 class SublimeBucketBase():
@@ -37,7 +38,7 @@ class SublimeBucketBase():
         bitbucket_pattern = (r'%s[:/]([\w\-]+)/([\w\-]+)(?:\.git)?' %
                              BITBUCKET_HOST)
         for remote in remotes:
-            remote_match = re.search(bitbucket_pattern, str(remote))
+            remote_match = re.search(bitbucket_pattern, remote)
             if remote_match:
                 return '%s/%s' % remote_match.groups()
 
@@ -51,12 +52,12 @@ class SublimeBucketBase():
         try:
             info = self._exec('git show HEAD').splitlines()
             for line in info:
-                revision_match = re.search(r'commit (\w+)', str(line))
+                revision_match = re.search(r'commit (\w+)', line)
                 if revision_match:
                     return revision_match.group(1)
         except subprocess.CalledProcessError:
             revision = self._exec('hg id -i')
-            return revision.decode('utf-8').strip()
+            return revision.strip()
 
     def get_file_path(self):
         """Get the path to the current file, relative to the repository root.
@@ -106,7 +107,9 @@ class SublimeBucketBase():
     def _exec(self, command):
         """Execute command with cwd set to the project path and shell=True.
         """
-        return subprocess.check_output(command, cwd=self.directory, shell=True)
+        output = subprocess.check_output(command, cwd=self.directory,
+                                         shell=True)
+        return output.decode(TEXT_ENCODING)
 
 
 class OpenInBitbucketCommand(SublimeBucketBase, sublime_plugin.TextCommand):
@@ -144,7 +147,7 @@ class FindBitbucketPullRequestCommand(SublimeBucketBase,
         blame_output = self._exec(
             'git blame -L %d,%d %s' % (current_line, current_line,
                                        self.get_file_path()))
-        revision_match = re.match(r'^(\w+)', blame_output.decode('utf-8'))
+        revision_match = re.match(r'^(\w+)', blame_output)
         if revision_match:
             return revision_match.group(1)
 
@@ -160,12 +163,12 @@ class FindBitbucketPullRequestCommand(SublimeBucketBase,
                                   revspec).splitlines()
         common = set(ancestry_path) & set(first_parent)
         return next(rev for rev in reversed(ancestry_path)
-                    if rev in common).decode('utf-8')
+                    if rev in common)
 
     def get_pull_request_id(self, merge_revision):
         """Get the Bitbucket pull request ID associated with the given merge.
         """
         info = self._exec('git show --oneline %s' % merge_revision)
-        pull_request_match = re.search(r'pull request #(\d+)', str(info))
+        pull_request_match = re.search(r'pull request #(\d+)', info)
         if pull_request_match:
             return int(pull_request_match.group(1))
