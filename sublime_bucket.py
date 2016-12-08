@@ -1,9 +1,9 @@
 import os
 import re
+import sublime
 import sublime_plugin
 import subprocess
 
-BITBUCKET_HOST = 'bitbucket.org'
 TEXT_ENCODING = 'utf-8'
 
 
@@ -23,6 +23,15 @@ class SublimeBucketBase():
                     break
         return self._directory
 
+    @property
+    def settings(self):
+        return sublime.load_settings('Bitbucket.sublime-settings')
+
+    @property
+    def bitbucket_hosts(self):
+        custom_hosts = self.settings.get('bitbucket_hosts', [])
+        return list(set(['bitbucket.org'] + custom_hosts))
+
     def find_bitbucket_remote(self):
         """Get the name of the remote (e.g. 'origin') pointing to Bitbucket.
         """
@@ -31,17 +40,22 @@ class SublimeBucketBase():
         # For both Git and Hg the remote name is the first token in the string.
         return re.split(r'\s+', remote_match.string, maxsplit=1)[0]
 
-    def find_bitbucket_repo(self):
-        """Get the Bitbucket repo (username/repo_slug) for the current file.
-
-        This method works by invoking `git remote -v` and inspecting the output
-        for a line containing BITBUCKET_HOST. If this command fails, it tries
-        again with `hg paths` for Mercurial repositories.
+    def find_bitbucket_host(self, remote_match=None):
+        """Get the Bitbucket host for the current file.
         """
-        return self.find_bitbucket_remote_match().group(1)
+        return (remote_match or self.find_bitbucket_remote_match()).group(1)
+
+    def find_bitbucket_repo(self, remote_match=None):
+        """Get the Bitbucket repo (username/repo_slug) for the current file.
+        """
+        return (remote_match or self.find_bitbucket_remote_match()).group(2)
 
     def find_bitbucket_remote_match(self):
-        """Get a regex match of the first remote containing BITBUCKET_HOST.
+        """Get a regex match of the first remote containing a Bitbucket host.
+
+        This method works by invoking `git remote -v` and inspecting the output
+        for a line containing a Bitbucket host. If this command fails, it tries
+        again with `hg paths` for Mercurial repositories.
 
         Returns an _sre.SRE_MATCH object w/ `string` attribute referring to the
         full remote string.
@@ -51,12 +65,12 @@ class SublimeBucketBase():
         except subprocess.CalledProcessError:
             remotes = self._exec('hg paths').splitlines()
 
-        bitbucket_pattern = (r'%s[:/]([\w\-]+/[\w\-]+)(?:\.git)?' %
-                             BITBUCKET_HOST)
-        for remote in remotes:
-            remote_match = re.search(bitbucket_pattern, remote)
-            if remote_match:
-                return remote_match
+        for host in self.bitbucket_hosts:
+            bitbucket_pattern = (r'(%s)[:/]([\w\-]+/[\w\-]+)(?:\.git)?' % host)
+            for remote in remotes:
+                remote_match = re.search(bitbucket_pattern, remote)
+                if remote_match:
+                    return remote_match
 
     def find_current_revision(self):
         """Get the hash of the commit/changeset that's currently checked out.
@@ -131,9 +145,10 @@ class SublimeBucketBase():
 
 class OpenInBitbucketCommand(SublimeBucketBase, sublime_plugin.TextCommand):
     def run(self, edit):
+        remote_match = self.find_bitbucket_remote_match()
         url = 'https://%(host)s/%(repo)s/src/%(branch)s/%(path)s#%(hash)s' % {
-            'host': BITBUCKET_HOST,
-            'repo': self.find_bitbucket_repo(),
+            'host': self.find_bitbucket_host(remote_match),
+            'repo': self.find_bitbucket_repo(remote_match),
             'branch': self.find_current_revision(),
             'path': self.get_file_path(),
             'hash': '%s-%s' % (os.path.basename(self.full_path),
@@ -148,9 +163,10 @@ class FindBitbucketPullRequestCommand(SublimeBucketBase,
         target_revision = self.find_selected_revision()
         merge_revision = self.get_merge_revision(target_revision)
         pull_request_id = self.get_pull_request_id(merge_revision)
+        remote_match = self.find_bitbucket_remote_match()
         url = 'https://%(host)s/%(repo)s/pull-requests/%(id)d' % {
-            'host': BITBUCKET_HOST,
-            'repo': self.find_bitbucket_repo(),
+            'host': self.find_bitbucket_host(remote_match),
+            'repo': self.find_bitbucket_repo(remote_match),
             'id': pull_request_id
         }
         subprocess.call(['open', url])
