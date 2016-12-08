@@ -176,34 +176,59 @@ class FindBitbucketPullRequestCommand(SublimeBucketBase,
     def find_selected_revision(self):
         """Get the hash of the revision associated with the current line.
 
-        This method works by invoking `git blame` and parsing the output.
+        This method works by invoking `git blame` and parsing the output. If
+        that fails, it tries `hg annotate` for Mercurial repos.
         """
         current_line = self.get_current_line()
-        blame_output = self._exec(
-            'git blame -L %d,%d %s' % (current_line, current_line,
-                                       self.get_file_path()))
-        revision_match = re.match(r'^(\w+)', blame_output)
-        if revision_match:
-            return revision_match.group(1)
+        try:
+            output = self._exec(
+                'git blame -L %d,%d %s' % (current_line, current_line,
+                                           self.get_file_path()))
+        except subprocess.CalledProcessError:
+            output = self._exec(
+                'hg annotate -c %s | head -n %d | tail -n 1' %
+                (self.get_file_path(), current_line))
+        return re.match(r'^(\w+)', output).group(1)
 
     def get_merge_revision(self, target_revision=None):
         """Get the hash of the revision where the target change was merged.
+
+        This method invokes `git rev-list` to compute the merge commit for Git
+        repos. For Mercurial repos it uses `hg log -r` to query for the
+        changeset using Mercurial's revset syntax.
         """
         target_revision = target_revision or self.find_current_revision()
         default_branch = self.get_default_branch()
-        revspec = '%s..%s' % (target_revision, default_branch)
-        ancestry_path = self._exec('git rev-list %s --ancestry-path' %
-                                   revspec).splitlines()
-        first_parent = self._exec('git rev-list %s --first-parent' %
-                                  revspec).splitlines()
-        common = set(ancestry_path) & set(first_parent)
-        return next(rev for rev in reversed(ancestry_path)
-                    if rev in common)
+
+        try:
+            revspec = '%s..%s' % (target_revision, default_branch)
+            ancestry_path = self._exec('git rev-list %s --ancestry-path' %
+                                       revspec).splitlines()
+            first_parent = self._exec('git rev-list %s --first-parent' %
+                                      revspec).splitlines()
+            common = set(ancestry_path) & set(first_parent)
+            return next(rev for rev in reversed(ancestry_path)
+                        if rev in common)
+        except subprocess.CalledProcessError:
+            log_output = self._exec(
+                'hg log -r "first(descendants(%s) and desc(\'pull request\') '
+                'and merge())"' % target_revision)
+            return re.search(r'changeset:\s+\d+:(\w+)', log_output).group(1)
 
     def get_pull_request_id(self, merge_revision):
         """Get the Bitbucket pull request ID associated with the given merge.
+
+        This method uses `git show` for Git repos and `hg log -r` for Mercurial
+        repos. In either case it scans the commit message for an explicit
+        mention of the pull request, which is populated by default in the
+        Bitbucket UI. This won't work if the author of the PR wrote a custom
+        commit message without mentioning the PR.
         """
-        info = self._exec('git show --oneline %s' % merge_revision)
+        try:
+            info = self._exec('git show --oneline %s' % merge_revision)
+        except subprocess.CalledProcessError:
+            info = self._exec('hg log -r %s' % merge_revision)
+
         pull_request_match = re.search(r'pull request #(\d+)', info)
         if pull_request_match:
             return int(pull_request_match.group(1))

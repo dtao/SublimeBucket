@@ -8,7 +8,7 @@ Bitbucket plugin for Sublime Text 3
 
 Opens the selected line(s) in Bitbucket, preserving all highlighted ranges.
 
-### 2. find_bitbucket_pull_request (Git only)
+### 2. find_bitbucket_pull_request (Git + Hg)
 
 Looks up the commit where the current line was last changed and opens the pull
 request where that change was introduced.
