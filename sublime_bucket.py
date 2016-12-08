@@ -23,6 +23,14 @@ class SublimeBucketBase():
                     break
         return self._directory
 
+    def find_bitbucket_remote(self):
+        """Get the name of the remote (e.g. 'origin') pointing to Bitbucket.
+        """
+        remote_match = self.find_bitbucket_remote_match()
+
+        # For both Git and Hg the remote name is the first token in the string.
+        return re.split(r'\s+', remote_match.string, maxsplit=1)[0]
+
     def find_bitbucket_repo(self):
         """Get the Bitbucket repo (username/repo_slug) for the current file.
 
@@ -30,17 +38,25 @@ class SublimeBucketBase():
         for a line containing BITBUCKET_HOST. If this command fails, it tries
         again with `hg paths` for Mercurial repositories.
         """
+        return self.find_bitbucket_remote_match().group(1)
+
+    def find_bitbucket_remote_match(self):
+        """Get a regex match of the first remote containing BITBUCKET_HOST.
+
+        Returns an _sre.SRE_MATCH object w/ `string` attribute referring to the
+        full remote string.
+        """
         try:
             remotes = self._exec('git remote -v').splitlines()
         except subprocess.CalledProcessError:
             remotes = self._exec('hg paths').splitlines()
 
-        bitbucket_pattern = (r'%s[:/]([\w\-]+)/([\w\-]+)(?:\.git)?' %
+        bitbucket_pattern = (r'%s[:/]([\w\-]+/[\w\-]+)(?:\.git)?' %
                              BITBUCKET_HOST)
         for remote in remotes:
             remote_match = re.search(bitbucket_pattern, remote)
             if remote_match:
-                return '%s/%s' % remote_match.groups()
+                return remote_match
 
     def find_current_revision(self):
         """Get the hash of the commit/changeset that's currently checked out.
@@ -99,10 +115,11 @@ class SublimeBucketBase():
     def get_default_branch(self):
         """Get the default branch for the current repo.
 
-        Currently this method just default to "master" as I need to figure out
-        how to actually do this.
+        Currently only works for Git.
         """
-        return 'master'
+        remote = self.find_bitbucket_remote()
+        return self._exec('git rev-parse --abbrev-ref refs/remotes/%s/HEAD'
+                          % remote).strip()
 
     def _exec(self, command):
         """Execute command with cwd set to the project path and shell=True.
