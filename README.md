@@ -4,6 +4,9 @@ Bitbucket plugin for Sublime Text 3
 
 ## Commands
 
+The following commands are available under "Bitbucket" from the context menu
+and can be assigned to keyboard shortcuts:
+
 ### 1. open_in_bitbucket (Git + Hg)
 
 Opens the selected line(s) in Bitbucket, preserving all highlighted ranges.
