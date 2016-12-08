@@ -7,22 +7,11 @@ import subprocess
 TEXT_ENCODING = 'utf-8'
 
 
+class SublimeBucketError(Exception):
+    pass
+
+
 class SublimeBucketBase():
-    @property
-    def full_path(self):
-        if not hasattr(self, '_full_path'):
-            self._full_path = self.view.file_name()
-        return self._full_path
-
-    @property
-    def directory(self):
-        if not hasattr(self, '_directory'):
-            for folder in self.view.window().folders():
-                if self.full_path.startswith(folder):
-                    self._directory = folder
-                    break
-        return self._directory
-
     @property
     def settings(self):
         return sublime.load_settings('Bitbucket.sublime-settings')
@@ -63,6 +52,9 @@ class SublimeBucketBase():
                 if remote_match:
                     return remote_match
 
+        raise SublimeBucketError('Unable to find a remote matching: %r' %
+                                 self.bitbucket_hosts)
+
     def find_current_revision(self):
         """Get the hash of the commit/changeset that's currently checked out.
 
@@ -80,15 +72,21 @@ class SublimeBucketBase():
             revision = self._exec('hg id -i')
             return revision.strip()
 
+    def get_directory(self):
+        """Get the open directory containing the current file.
+        """
+        full_path = self.view.file_name()
+        for folder in self.view.window().folders():
+            if full_path.startswith(folder):
+                return folder
+
     def get_file_path(self):
         """Get the path to the current file, relative to the repository root.
         """
-        for folder in self.view.window().folders():
-            if self.full_path.startswith(folder):
-                file_path = self.full_path[len(folder):]
-                if file_path.startswith('/'):
-                    file_path = file_path[1:]
-                return file_path
+        file_path = self.view.file_name()[len(self.get_directory()):]
+        if file_path.startswith('/'):
+            file_path = file_path[1:]
+        return file_path
 
     def get_line_ranges(self):
         """Get the list of currently selected line ranges, in start:end format.
@@ -120,47 +118,60 @@ class SublimeBucketBase():
     def get_default_branch(self):
         """Get the default branch for the current repo.
 
-        Currently only works for Git.
+        Currently assumes "default" for Mercurial repos.
         """
         remote = self.find_bitbucket_remote()
-        return self._exec('git rev-parse --abbrev-ref refs/remotes/%s/HEAD'
-                          % remote).strip()
+        try:
+            return self._exec('git rev-parse --abbrev-ref refs/remotes/%s/HEAD'
+                              % remote).strip()
+        except subprocess.CalledProcessError:
+            return 'default'
 
     def _exec(self, command):
         """Execute command with cwd set to the project path and shell=True.
         """
-        output = subprocess.check_output(command, cwd=self.directory,
+        output = subprocess.check_output(command, cwd=self.get_directory(),
                                          shell=True)
         return output.decode(TEXT_ENCODING)
 
 
 class OpenInBitbucketCommand(SublimeBucketBase, sublime_plugin.TextCommand):
     def run(self, edit):
-        remote_match = self.find_bitbucket_remote_match()
-        url = 'https://%(host)s/%(repo)s/src/%(branch)s/%(path)s#%(hash)s' % {
-            'host': remote_match.group('host'),
-            'repo': remote_match.group('repo'),
-            'branch': self.find_current_revision(),
-            'path': self.get_file_path(),
-            'hash': '%s-%s' % (os.path.basename(self.full_path),
-                               ','.join(self.get_line_ranges()))
-        }
-        subprocess.call(['open', url])
+        try:
+            remote_match = self.find_bitbucket_remote_match()
+            url = '%(host)s/%(repo)s/src/%(branch)s/%(path)s#%(hash)s' % {
+                'host': 'https://' + remote_match.group('host'),
+                'repo': remote_match.group('repo'),
+                'branch': self.find_current_revision(),
+                'path': self.get_file_path(),
+                'hash': '%s-%s' % (os.path.basename(self.view.file_name()),
+                                   ','.join(self.get_line_ranges()))
+            }
+            subprocess.call(['open', url])
+        except SublimeBucketError as e:
+            sublime.error_message(str(e))
+        except Exception:
+            sublime.error_message('Encountered an unexpected error')
 
 
 class FindBitbucketPullRequestCommand(SublimeBucketBase,
                                       sublime_plugin.TextCommand):
     def run(self, edit):
-        target_revision = self.find_selected_revision()
-        merge_revision = self.get_merge_revision(target_revision)
-        pull_request_id = self.get_pull_request_id(merge_revision)
-        remote_match = self.find_bitbucket_remote_match()
-        url = 'https://%(host)s/%(repo)s/pull-requests/%(id)d' % {
-            'host': remote_match.group('host'),
-            'repo': remote_match.group('repo'),
-            'id': pull_request_id
-        }
-        subprocess.call(['open', url])
+        try:
+            target_revision = self.find_selected_revision()
+            merge_revision = self.get_merge_revision(target_revision)
+            pull_request_id = self.get_pull_request_id(merge_revision)
+            remote_match = self.find_bitbucket_remote_match()
+            url = 'https://%(host)s/%(repo)s/pull-requests/%(id)d' % {
+                'host': remote_match.group('host'),
+                'repo': remote_match.group('repo'),
+                'id': pull_request_id
+            }
+            subprocess.call(['open', url])
+        except SublimeBucketError as e:
+            sublime.error_message(str(e))
+        except Exception:
+            sublime.error_message('Encountered an unexpected error')
 
     def find_selected_revision(self):
         """Get the hash of the revision associated with the current line.
