@@ -25,6 +25,6 @@ following values are configurable:
 
 A list of hosts to identify as Bitbucket. For the vast majority of users this
 should just stay as the default of `['bitbucket.org']`. On the off chance you
-have some fancy access to a different Bitbucket environment (e.g., you're a
-developer on the Bitbucket team), you can add the domain for that environment
-to this list.
+have some fancy access to other Bitbucket environments (e.g., you're a
+developer on the Bitbucket team), you can add the domain(s) for those
+environment to this list.
