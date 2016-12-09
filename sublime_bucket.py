@@ -88,8 +88,27 @@ class OpenInBitbucketCommand(CommandBase, sublime_plugin.TextCommand):
             sublime.error_message('Encountered an unexpected error')
 
 
-class FindBitbucketPullRequestCommand(CommandBase,
-                                      sublime_plugin.TextCommand):
+class OpenBitbucketChangesetCommand(CommandBase, sublime_plugin.TextCommand):
+    def run(self, edit):
+        backend = self.get_backend()
+
+        try:
+            remote_match = backend.find_bitbucket_remote_match()
+            url = '%(host)s/%(repo)s/commits/%(hash)s' % {
+                'host': 'https://' + remote_match.group('host'),
+                'repo': remote_match.group('repo'),
+                'hash': backend.find_selected_revision(self.get_file_path(),
+                                                       self.get_current_line())
+            }
+            subprocess.call(['open', url])
+        except SublimeBucketError as e:
+            sublime.error_message(str(e))
+        except Exception as e:
+            print(e)
+            sublime.error_message('Encountered an unexpected error')
+
+
+class FindBitbucketPullRequestCommand(CommandBase, sublime_plugin.TextCommand):
     def run(self, edit):
         backend = self.get_backend()
 

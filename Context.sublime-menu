@@ -9,6 +9,11 @@
         "command": "open_in_bitbucket"
       },
       {
+        "caption": "Open Bitbucket Changeset",
+        "id": "bitbucket-open-changeset",
+        "command": "open_bitbucket_changeset"
+      },
+      {
         "caption": "Find Bitbucket Pull Request",
         "id": "bitbucket-find-pull-request",
         "command": "find_bitbucket_pull_request"
