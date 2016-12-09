@@ -40,5 +40,11 @@ have some fancy access to other Bitbucket environments (e.g., you're a
 developer on the Bitbucket team), you can add the domain(s) for those
 environment to this list.
 
+## Why is this on GitHub? Don't you work for Bitbucket?
+
+GitHub is for toy projects (like this) while Bitbucket is for Serious Work™.
+
+Just kidding. I didn't have enough Python projects on GitHub.
+
 [1]: https://github.com/wbond/package_control_channel/pull/5998
 [2]: https://packagecontrol.io/
