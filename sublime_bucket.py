@@ -94,11 +94,12 @@ class OpenBitbucketChangesetCommand(CommandBase, sublime_plugin.TextCommand):
 
         try:
             remote_match = backend.find_bitbucket_remote_match()
-            url = '%(host)s/%(repo)s/commits/%(hash)s' % {
+            url = '%(host)s/%(repo)s/commits/%(hash)s#chg-%(file)s' % {
                 'host': 'https://' + remote_match.group('host'),
                 'repo': remote_match.group('repo'),
-                'hash': backend.find_selected_revision(self.get_file_path(),
-                                                       self.get_current_line())
+                'hash': backend.find_selected_revision(
+                    self.get_file_path(), self.get_current_line()),
+                'file': self.get_file_path()
             }
             subprocess.call(['open', url])
         except SublimeBucketError as e:
@@ -117,10 +118,12 @@ class FindBitbucketPullRequestCommand(CommandBase, sublime_plugin.TextCommand):
                 self.get_file_path(), self.get_current_line())
             pull_request_id = backend.get_pull_request_id(target_revision)
             remote_match = backend.find_bitbucket_remote_match()
-            url = 'https://%(host)s/%(repo)s/pull-requests/%(id)d' % {
+            url = ('https://%(host)s/%(repo)s/pull-requests/%(id)d/diff'
+                   '#chg-%(file)s') % {
                 'host': remote_match.group('host'),
                 'repo': remote_match.group('repo'),
-                'id': pull_request_id
+                'id': pull_request_id,
+                'file': self.get_file_path()
             }
             subprocess.call(['open', url])
         except SublimeBucketError as e:
