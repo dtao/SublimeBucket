@@ -2,6 +2,13 @@
 
 Bitbucket plugin for Sublime Text 3
 
+## Installation
+
+I have a [pull request][1] to add this to [Package Control][2]. In the
+meantime, you can create a directory called "SublimeBucket" (or anything for
+that matter) in your Packages folder and copy Context.sublime-menu and
+sublime_bucket.py there.
+
 ## Commands
 
 The following commands are available under "Bitbucket" from the context menu
@@ -32,3 +39,6 @@ should just stay as the default of `['bitbucket.org']`. On the off chance you
 have some fancy access to other Bitbucket environments (e.g., you're a
 developer on the Bitbucket team), you can add the domain(s) for those
 environment to this list.
+
+[1]: https://github.com/wbond/package_control_channel/pull/5998
+[2]: https://packagecontrol.io/
