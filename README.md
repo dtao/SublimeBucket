@@ -11,11 +11,12 @@ that matter) in your Packages folder and copy the following files there:
 
 - sublime_bucket.py
 - Context.sublime-menu
+- Bitbucket.sublime-commands
 
 ## Commands
 
-The following commands are available under "Bitbucket" from the context menu
-and can be assigned to keyboard shortcuts:
+The following commands are available under "Bitbucket" from the context menu as
+well as the command palette and can be assigned to keyboard shortcuts:
 
 ### 1. Open in Bitbucket (Git + Hg)
 

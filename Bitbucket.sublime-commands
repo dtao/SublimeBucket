@@ -1,0 +1,14 @@
+[
+  {
+    "caption": "Bitbucket: Open",
+    "command": "open_in_bitbucket"
+  },
+  {
+    "caption": "Bitbucket: Open Changeset",
+    "command": "open_bitbucket_changeset"
+  },
+  {
+    "caption": "Bitbucket: Find Pull Request",
+    "command": "find_bitbucket_pull_request"
+  }
+]
