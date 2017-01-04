@@ -4,28 +4,58 @@ Bitbucket plugin for Sublime Text 3
 
 ## Installation
 
-I have a [pull request][1] to add this to [Package Control][2]. In the
-meantime, you can create a directory called "SublimeBucket" (or anything for
-that matter) in your Packages folder and copy Context.sublime-menu and
-sublime_bucket.py there.
+The easiest way to install the Bitbucket plugin is using [Package Control][1]
+(the package is listed as simply "Bitbucket"). If you prefer to do things the
+hard way, you can create a directory called "SublimeBucket" (or anything for
+that matter) in your Packages folder and copy the following files there:
+
+- sublime_bucket.py
+- Context.sublime-menu
 
 ## Commands
 
 The following commands are available under "Bitbucket" from the context menu
 and can be assigned to keyboard shortcuts:
 
-### 1. open_in_bitbucket (Git + Hg)
+### 1. Open in Bitbucket (Git + Hg)
 
 Opens the selected line(s) in Bitbucket, preserving all highlighted ranges.
 
-### 2. open_bitbucket_changeset (Git + Hg)
+Example keyboard shortcut:
+
+```
+{
+  "keys": ["super+b", "super+o"],
+  "command": "open_in_bitbucket"
+}
+```
+
+### 2. Open Bitbucket Changeset (Git + Hg)
 
 Opens the commit where the current line was last changed in Bitbucket.
 
-### 3. find_bitbucket_pull_request (Git + Hg)
+Example keyboard shortcut:
+
+```
+{
+  "keys": ["super+b", "super+c"],
+  "command": "open_bitbucket_changeset"
+}
+```
+
+### 3. Find Bitbucket Pull Request (Git + Hg)
 
 Looks up the commit where the current line was last changed and opens the pull
 request where that change was introduced.
+
+Example keyboard shortcut:
+
+```
+{
+  "keys": ["super+b", "super+p"],
+  "command": "find_bitbucket_pull_request"
+}
+```
 
 ## Settings
 
@@ -46,5 +76,4 @@ GitHub is for toy projects (like this) while Bitbucket is for Serious Work™.
 
 Just kidding. I didn't have enough Python projects on GitHub.
 
-[1]: https://github.com/wbond/package_control_channel/pull/5998
-[2]: https://packagecontrol.io/
+[1]: https://packagecontrol.io/
