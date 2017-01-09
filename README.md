@@ -12,6 +12,7 @@ that matter) in your Packages folder and copy the following files there:
 - sublime_bucket.py
 - Context.sublime-menu
 - Bitbucket.sublime-commands
+- Bitbucket.sublime-settings
 
 ## Commands
 
