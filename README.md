@@ -10,6 +10,7 @@ hard way, you can create a directory called "SublimeBucket" (or anything for
 that matter) in your Packages folder and copy the following files there:
 
 - sublime_bucket.py
+- Main.sublime-menu
 - Context.sublime-menu
 - Bitbucket.sublime-commands
 - Bitbucket.sublime-settings
