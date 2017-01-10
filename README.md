@@ -18,9 +18,10 @@ that matter) in your Packages folder and copy the following files there:
 ## Commands
 
 The following commands are available under "Bitbucket" from the context menu as
-well as the command palette and can be assigned to keyboard shortcuts:
+well as the command palette and can be assigned to keyboard shortcuts. Every
+command should work for both Git and Mercurial repositories.
 
-### 1. Open in Bitbucket (Git + Hg)
+### 1. Open in Bitbucket
 
 Opens the selected line(s) in Bitbucket, preserving all highlighted ranges.
 
@@ -33,7 +34,7 @@ Example keyboard shortcut:
 }
 ```
 
-### 2. Open Bitbucket Changeset (Git + Hg)
+### 2. Open Bitbucket Changeset
 
 Opens the commit where the current line was last changed in Bitbucket.
 
@@ -46,7 +47,7 @@ Example keyboard shortcut:
 }
 ```
 
-### 3. Find Bitbucket Pull Request (Git + Hg)
+### 3. Find Bitbucket Pull Request
 
 Looks up the commit where the current line was last changed and opens the pull
 request where that change was introduced.
