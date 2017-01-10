@@ -153,6 +153,8 @@ class OpenInIssueTrackerCommand(CommandBase, sublime_plugin.TextCommand):
                     tracker.get_issue_url(key, **remote_match.groupdict())])
                 return
 
+            raise SublimeBucketError('Unable to find any matching issue keys')
+
         except SublimeBucketError as e:
             sublime.error_message(str(e))
         except Exception:
@@ -370,8 +372,7 @@ class BitbucketIssueTracker(IssueTrackerBase):
         issue_key_match = re.search(r'\b\#(\d+)\b', message)
         if issue_key_match:
             return issue_key_match.group(1)
-
-        raise SublimeBucketError('Unable to find any matching issue keys')
+        return None
 
     def get_issue_url(self, issue_key, **kwargs):
         repo = kwargs['repo']
@@ -388,8 +389,7 @@ class JiraIssueTracker(IssueTrackerBase):
             issue_key_match = re.search(r'\b(%s-\d+)\b' % project_key, message)
             if issue_key_match:
                 return issue_key_match.group(1)
-
-        raise SublimeBucketError('Unable to find any matching issue keys')
+        return None
 
     def get_issue_url(self, issue_key, **kwargs):
         return urljoin(self.host, '/browse/%s' % issue_key)
