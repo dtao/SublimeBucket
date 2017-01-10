@@ -3,6 +3,7 @@ import re
 import sublime
 import sublime_plugin
 import subprocess
+import traceback
 
 TEXT_ENCODING = 'utf-8'
 
@@ -83,8 +84,8 @@ class OpenInBitbucketCommand(CommandBase, sublime_plugin.TextCommand):
             subprocess.call(['open', url])
         except SublimeBucketError as e:
             sublime.error_message(str(e))
-        except Exception as e:
-            print(e)
+        except Exception:
+            traceback.print_exc()
             sublime.error_message('Encountered an unexpected error')
 
 
@@ -104,8 +105,8 @@ class OpenBitbucketChangesetCommand(CommandBase, sublime_plugin.TextCommand):
             subprocess.call(['open', url])
         except SublimeBucketError as e:
             sublime.error_message(str(e))
-        except Exception as e:
-            print(e)
+        except Exception:
+            traceback.print_exc()
             sublime.error_message('Encountered an unexpected error')
 
 
@@ -128,8 +129,8 @@ class FindBitbucketPullRequestCommand(CommandBase, sublime_plugin.TextCommand):
             subprocess.call(['open', url])
         except SublimeBucketError as e:
             sublime.error_message(str(e))
-        except Exception as e:
-            print(e)
+        except Exception:
+            traceback.print_exc()
             sublime.error_message('Encountered an unexpected error')
 
 
