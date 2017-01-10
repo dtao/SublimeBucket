@@ -4,6 +4,7 @@ import sublime
 import sublime_plugin
 import subprocess
 import traceback
+from urllib.parse import urljoin
 
 TEXT_ENCODING = 'utf-8'
 
@@ -134,6 +135,31 @@ class FindBitbucketPullRequestCommand(CommandBase, sublime_plugin.TextCommand):
             sublime.error_message('Encountered an unexpected error')
 
 
+class OpenInIssueTrackerCommand(CommandBase, sublime_plugin.TextCommand):
+    def run(self, edit):
+        backend = self.get_backend()
+
+        try:
+            target_revision = backend.find_selected_revision(
+                self.get_file_path(), self.get_current_line())
+
+            remote_match = backend.find_bitbucket_remote_match()
+
+            # For now just open the first issue key we find. In the future
+            # maybe consider adding support for multiple issues.
+            for (key, tracker) in backend.get_issue_keys(target_revision):
+                subprocess.call([
+                    'open',
+                    tracker.get_issue_url(key, **remote_match.groupdict())])
+                return
+
+        except SublimeBucketError as e:
+            sublime.error_message(str(e))
+        except Exception:
+            traceback.print_exc()
+            sublime.error_message('Encountered an unexpected error')
+
+
 class BackendBase():
     def __init__(self, cwd):
         self.cwd = cwd
@@ -146,6 +172,20 @@ class BackendBase():
     def bitbucket_hosts(self):
         custom_hosts = self.settings.get('bitbucket_hosts', [])
         return list(set(['bitbucket.org'] + custom_hosts))
+
+    @property
+    def issue_trackers(self):
+        return [self.create_issue_tracker(config)
+                for config in self.settings.get('issue_trackers', [])]
+
+    def create_issue_tracker(self, config):
+        if config['type'] == 'bitbucket':
+            return BitbucketIssueTracker(config)
+        elif config['type'] == 'jira':
+            return JiraIssueTracker(config)
+
+        raise SublimeBucketError('Unknown issue tracker type: "%s"' %
+                                 config['type'])
 
     def find_bitbucket_remote_match(self):
         """Get a regex match of the first remote containing a Bitbucket host.
@@ -205,6 +245,16 @@ class BackendBase():
         """
         raise NotImplementedError
 
+    def get_issue_keys(self, target_revision):
+        """Get any issue key(s) in the commit message of the target revision.
+        """
+        revision_message = self.get_revision_message(target_revision)
+
+        for issue_tracker in self.issue_trackers:
+            issue_key = issue_tracker.find_issue_key(revision_message)
+            if issue_key:
+                yield issue_key, issue_tracker
+
     def _exec(self, command):
         """Execute command with cwd set to the project path and shell=True.
         """
@@ -237,7 +287,7 @@ class GitBackend(BackendBase):
         return self._exec('git rev-parse --abbrev-ref refs/remotes/%s/HEAD'
                           % remote).strip()
 
-    def get_pull_request_id(self, target_revision):
+    def get_merge_revision(self, target_revision):
         default_branch = self.get_default_branch()
         revspec = '%s..%s' % (target_revision, default_branch)
 
@@ -250,10 +300,18 @@ class GitBackend(BackendBase):
         common = set(ancestry_path) & set(first_parent)
         merge_revision = next(rev for rev in reversed(ancestry_path)
                               if rev in common)
+        return merge_revision
+
+    def get_revision_message(self, revision):
+        return self._exec('git show %s --format="%%s%%n%%n%%b" --no-patch' %
+                          revision)
+
+    def get_pull_request_id(self, target_revision):
+        merge_revision = self.get_merge_revision(target_revision)
 
         # Look at the commit message for the merge for a reference to the PR.
-        info = self._exec('git show --oneline %s' % merge_revision)
-        pull_request_match = re.search(r'pull request #(\d+)', info)
+        message = self.get_revision_message(merge_revision)
+        pull_request_match = re.search(r'pull request #(\d+)', message)
         if pull_request_match:
             return int(pull_request_match.group(1))
 
@@ -279,6 +337,11 @@ class MercurialBackend(BackendBase):
     def get_default_branch(self):
         return 'default'
 
+    def get_revision_message(self, revision):
+        output = self._exec('hg log -v -r %s' % revision)
+        message_match = re.search(r'description:\n(.*)', output, re.DOTALL)
+        return message_match.group(1)
+
     def get_pull_request_id(self, target_revision):
         log_output = self._exec(
             'hg log -r "first(descendants(%s) and desc(\'pull request\') '
@@ -289,6 +352,47 @@ class MercurialBackend(BackendBase):
 
         raise SublimeBucketError('Unable to determine the pull request where '
                                  'the changeset was merged')
+
+
+class IssueTrackerBase():
+    def find_issue_key(self, message, **kwargs):
+        raise NotImplementedError
+
+    def get_issue_url(self, issue_key, **kwargs):
+        raise NotImplementedError
+
+
+class BitbucketIssueTracker(IssueTrackerBase):
+    def __init__(self, config):
+        self.host = config.get('host', 'https://bitbucket.org')
+
+    def find_issue_key(self, message, **kwargs):
+        issue_key_match = re.search(r'\b\#(\d+)\b', message)
+        if issue_key_match:
+            return issue_key_match.group(1)
+
+        raise SublimeBucketError('Unable to find any matching issue keys')
+
+    def get_issue_url(self, issue_key, **kwargs):
+        repo = kwargs['repo']
+        return urljoin(self.host, '/%s/issues/%s' % (repo, issue_key))
+
+
+class JiraIssueTracker(IssueTrackerBase):
+    def __init__(self, config):
+        self.host = config['host']
+        self.project_keys = config['project_keys']
+
+    def find_issue_key(self, message, **kwargs):
+        for project_key in self.project_keys:
+            issue_key_match = re.search(r'\b(%s-\d+)\b' % project_key, message)
+            if issue_key_match:
+                return issue_key_match.group(1)
+
+        raise SublimeBucketError('Unable to find any matching issue keys')
+
+    def get_issue_url(self, issue_key, **kwargs):
+        return urljoin(self.host, '/browse/%s' % issue_key)
 
 
 class SublimeBucketError(Exception):
