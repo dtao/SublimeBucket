@@ -24,6 +24,10 @@ class CommandBase():
 
         raise SublimeBucketError('Unable to find a Git/Hg repository')
 
+    def get_issue_trackers(self):
+        return [self._create_issue_tracker(config)
+                for config in self.settings.get('issue_trackers', [])]
+
     def get_directory(self):
         """Get the open directory containing the current file.
         """
@@ -66,6 +70,15 @@ class CommandBase():
         start, end = self.view.sel()[0]
         row, col = self.view.rowcol(start)
         return row + 1
+
+    def _create_issue_tracker(self, config):
+        if config['type'] == 'bitbucket':
+            return BitbucketIssueTracker(config)
+        elif config['type'] == 'jira':
+            return JiraIssueTracker(config)
+
+        raise SublimeBucketError('Unknown issue tracker type: "%s"' %
+                                 config['type'])
 
 
 class OpenInBitbucketCommand(CommandBase, sublime_plugin.TextCommand):
@@ -137,17 +150,14 @@ class FindBitbucketPullRequestCommand(CommandBase, sublime_plugin.TextCommand):
 
 class OpenInIssueTrackerCommand(CommandBase, sublime_plugin.TextCommand):
     def run(self, edit):
-        backend = self.get_backend()
+        self.backend = self.get_backend()
 
         try:
-            target_revision = backend.find_selected_revision(
-                self.get_file_path(), self.get_current_line())
-
-            remote_match = backend.find_bitbucket_remote_match()
+            remote_match = self.backend.find_bitbucket_remote_match()
 
             # For now just open the first issue key we find. In the future
             # maybe consider adding support for multiple issues.
-            for (key, tracker) in backend.get_issue_keys(target_revision):
+            for (key, tracker) in self.get_issue_keys():
                 subprocess.call([
                     'open',
                     tracker.get_issue_url(key, **remote_match.groupdict())])
@@ -160,6 +170,19 @@ class OpenInIssueTrackerCommand(CommandBase, sublime_plugin.TextCommand):
         except Exception:
             traceback.print_exc()
             sublime.error_message('Encountered an unexpected error')
+
+    def get_issue_keys(self):
+        """Get any issue key(s) in the commit message of the target revision.
+        """
+        target_revision = self.backend.find_selected_revision(
+            self.get_file_path(), self.get_current_line())
+
+        revision_message = self.backend.get_revision_message(target_revision)
+
+        for issue_tracker in self.get_issue_trackers():
+            issue_key = issue_tracker.find_issue_key(revision_message)
+            if issue_key:
+                yield issue_key, issue_tracker
 
 
 class BackendBase():
@@ -174,20 +197,6 @@ class BackendBase():
     def bitbucket_hosts(self):
         custom_hosts = self.settings.get('bitbucket_hosts', [])
         return list(set(['bitbucket.org'] + custom_hosts))
-
-    @property
-    def issue_trackers(self):
-        return [self.create_issue_tracker(config)
-                for config in self.settings.get('issue_trackers', [])]
-
-    def create_issue_tracker(self, config):
-        if config['type'] == 'bitbucket':
-            return BitbucketIssueTracker(config)
-        elif config['type'] == 'jira':
-            return JiraIssueTracker(config)
-
-        raise SublimeBucketError('Unknown issue tracker type: "%s"' %
-                                 config['type'])
 
     def find_bitbucket_remote_match(self):
         """Get a regex match of the first remote containing a Bitbucket host.
@@ -246,16 +255,6 @@ class BackendBase():
         without mentioning the PR.
         """
         raise NotImplementedError
-
-    def get_issue_keys(self, target_revision):
-        """Get any issue key(s) in the commit message of the target revision.
-        """
-        revision_message = self.get_revision_message(target_revision)
-
-        for issue_tracker in self.issue_trackers:
-            issue_key = issue_tracker.find_issue_key(revision_message)
-            if issue_key:
-                yield issue_key, issue_tracker
 
     def _exec(self, command):
         """Execute command with cwd set to the project path and shell=True.
