@@ -10,5 +10,9 @@
   {
     "caption": "Bitbucket: Find Pull Request",
     "command": "find_bitbucket_pull_request"
+  },
+  {
+    "caption": "Bitbucket: Open Issue",
+    "command": "open_in_issue_tracker"
   }
 ]

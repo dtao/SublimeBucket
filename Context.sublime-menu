@@ -17,6 +17,11 @@
         "caption": "Find Bitbucket Pull Request",
         "id": "bitbucket-find-pull-request",
         "command": "find_bitbucket_pull_request"
+      },
+      {
+        "caption": "Open in Issue Tracker",
+        "id": "bitbucket-open-issue",
+        "command": "open_in_issue_tracker"
       }
     ]
   }

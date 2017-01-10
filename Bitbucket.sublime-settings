@@ -2,5 +2,12 @@
   "bitbucket_hosts":
   [
     "bitbucket.org"
+  ],
+  "issue_trackers":
+  [
+    {
+      "type": "bitbucket",
+      "host": "https://bitbucket.org"
+    }
   ]
 }

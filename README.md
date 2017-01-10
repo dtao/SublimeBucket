@@ -61,6 +61,22 @@ Example keyboard shortcut:
 }
 ```
 
+### 4. Open in Issue Tracker
+
+Looks up the commit where the current line was last changed and opens the issue
+in your issue tracker (e.g., in JIRA) with which that change is associated.
+
+See the [issue_trackers setting][2] for more information.
+
+Example keyboard shortcut:
+
+```
+{
+  "keys": ["super+b", "super+i"],
+  "command": "open_in_issue_tracker"
+}
+```
+
 ## Settings
 
 This plugin stores settings in the Bitbucket.sublime-settings package. The
@@ -74,6 +90,48 @@ have some fancy access to other Bitbucket environments (e.g., you're a
 developer on the Bitbucket team), you can add the domain(s) for those
 environment to this list.
 
+### 2. issue_trackers
+
+A list of issue trackers you use, to power the "Open in Issue Tracker" command.
+
+Each issue tracker type has its own style of configuration. Currently Bitbucket
+and JIRA are supported.
+
+#### Bitbucket
+
+The Bitbucket tracker identifies links to Bitbucket issues in commit messages.
+
+```
+{
+  "type": "bitbucket",
+
+  // Optional: a custom Bitbucket host, in case you're one of those special
+  // people who also modified the `bitbucket_hosts` setting above. Defaults to
+  // https://bitbucket.org for the majority of the population.
+  "host": "https://bitbucket.org"
+}
+```
+
+#### JIRA
+
+The JIRA tracker identifies links to JIRA issues for a given instance and a
+specified list of project keys.
+
+```
+{
+  "type": "jira",
+
+  // The base URL (including https://) of the JIRA instance.
+  "host": "https://jira.company.com",
+
+  // An array of project keys (e.g., ABC) for identifying issue references. For
+  // example, if you have `["ABC"]` in here, then if a commit message includes
+  // a string like 'ABC-123' the Bitbucket plugin can take you straight to that
+  // issue.
+  "project_keys": []
+}
+```
+
 ## Why is this on GitHub? Don't you work for Bitbucket?
 
 GitHub is for toy projects (like this) while Bitbucket is for Serious Work™.
@@ -81,3 +139,4 @@ GitHub is for toy projects (like this) while Bitbucket is for Serious Work™.
 Just kidding. I didn't have enough Python projects on GitHub.
 
 [1]: https://packagecontrol.io/
+[2]: #2-issue_trackers
