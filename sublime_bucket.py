@@ -4,6 +4,7 @@ import sublime
 import sublime_plugin
 import subprocess
 import traceback
+import webbrowser
 from urllib.parse import urljoin
 
 TEXT_ENCODING = 'utf-8'
@@ -93,7 +94,7 @@ class OpenInBitbucketCommand(CommandBase, sublime_plugin.TextCommand):
                 'hash': '%s-%s' % (os.path.basename(self.view.file_name()),
                                    ','.join(self.get_line_ranges()))
             }
-            subprocess.call(['open', url])
+            webbrowser.open(url)
         except SublimeBucketError as e:
             sublime.error_message(str(e))
         except Exception:
@@ -114,7 +115,7 @@ class OpenBitbucketChangesetCommand(CommandBase, sublime_plugin.TextCommand):
                     self.get_file_path(), self.get_current_line()),
                 'file': self.get_file_path()
             }
-            subprocess.call(['open', url])
+            webbrowser.open(url)
         except SublimeBucketError as e:
             sublime.error_message(str(e))
         except Exception:
@@ -138,7 +139,7 @@ class FindBitbucketPullRequestCommand(CommandBase, sublime_plugin.TextCommand):
                 'id': pull_request_id,
                 'file': self.get_file_path()
             }
-            subprocess.call(['open', url])
+            webbrowser.open(url)
         except SublimeBucketError as e:
             sublime.error_message(str(e))
         except Exception:
@@ -156,9 +157,8 @@ class OpenInIssueTrackerCommand(CommandBase, sublime_plugin.TextCommand):
             # For now just open the first issue key we find. In the future
             # maybe consider adding support for multiple issues.
             for (key, tracker) in self.get_issue_keys():
-                subprocess.call([
-                    'open',
-                    tracker.get_issue_url(key, **remote_match.groupdict())])
+                webbrowser.open(
+                    tracker.get_issue_url(key, **remote_match.groupdict()))
                 return
 
             raise SublimeBucketError('Unable to find any matching issue keys')
