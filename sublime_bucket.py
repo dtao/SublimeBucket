@@ -49,26 +49,24 @@ class CommandBase():
         """
         ranges = []
 
-        for (start, end) in self.view.sel():
+        for region in self.view.sel():
             # Sublime provides 0-based line numbers but Bitbucket line numbers
             # start with 1.
-            first_line = self.view.rowcol(start)[0] + 1
-            last_line = self.view.rowcol(end)[0] + 1
+            first_line = self.view.rowcol(region.begin())[0] + 1
+            last_line = self.view.rowcol(region.end())[0] + 1
 
             if first_line == last_line:
                 ranges.append(str(first_line))
             else:
-                # Fix ordering in case selection was made bottom-up.
-                ranges.append('%d:%d' % (min(first_line, last_line),
-                                         max(first_line, last_line)))
+                ranges.append('%d:%d' % (first_line, last_line))
 
         return ranges
 
     def get_current_line(self):
         """Get the 1-based line number of the (first) currently selected line.
         """
-        start, end = self.view.sel()[0]
-        row, col = self.view.rowcol(start)
+        region = self.view.sel()[0]
+        row, col = self.view.rowcol(region.begin())
         return row + 1
 
     def _create_issue_tracker(self, config):
