@@ -40,10 +40,7 @@ class CommandBase():
     def get_file_path(self):
         """Get the path to the current file, relative to the repository root.
         """
-        file_path = self.view.file_name()[len(self.get_directory()):]
-        if file_path.startswith('/'):
-            file_path = file_path[1:]
-        return file_path
+        return os.path.relpath(self.view.file_name(), self.get_directory())
 
     def get_line_ranges(self):
         """Get the list of currently selected line ranges, in start:end format.
