@@ -10,6 +10,10 @@ from urllib.parse import urljoin
 TEXT_ENCODING = 'utf-8'
 
 
+def load_settings():
+    return sublime.load_settings('Bitbucket.sublime-settings')
+
+
 class CommandBase():
     def get_backend(self):
         """Get the backend (Git or Mercurial) for the current project.
@@ -26,8 +30,9 @@ class CommandBase():
         raise SublimeBucketError('Unable to find a Git/Hg repository')
 
     def get_issue_trackers(self):
+        settings = load_settings()
         return [self._create_issue_tracker(config)
-                for config in self.settings.get('issue_trackers', [])]
+                for config in settings.get('issue_trackers', [])]
 
     def get_directory(self):
         """Get the open directory containing the current file.
@@ -185,12 +190,8 @@ class BackendBase():
         self.cwd = cwd
 
     @property
-    def settings(self):
-        return sublime.load_settings('Bitbucket.sublime-settings')
-
-    @property
     def bitbucket_hosts(self):
-        custom_hosts = self.settings.get('bitbucket_hosts', [])
+        custom_hosts = load_settings().get('bitbucket_hosts', [])
         return list(set(['bitbucket.org'] + custom_hosts))
 
     def find_bitbucket_remote_match(self):
