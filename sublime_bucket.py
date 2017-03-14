@@ -325,10 +325,8 @@ class MercurialBackend(BackendBase):
         return self._exec('hg id -i').strip()
 
     def find_selected_revision(self, file_path, current_line):
-        output = self._exec(
-            'hg annotate -c %s | head -n %d | tail -n 1' % (file_path,
-                                                            current_line))
-        return re.match(r'^(\w+)', output).group(1)
+        annotated_lines = self._exec('hg annotate -c %s' % file_path).splitlines()
+        return re.match(r'^(\w+)', annotated_lines[current_line - 1]).group(1)
 
     def get_default_branch(self):
         return 'default'
