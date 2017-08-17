@@ -324,8 +324,7 @@ class MercurialBackend(BackendBase):
         return self._exec('hg paths').splitlines()
 
     def find_current_revision(self):
-        return self._exec('hg id -i').strip().split("+")[0]
-
+        return self._exec('hg id -i').strip().rstrip('+')
 
     def find_selected_revision(self, file_path, current_line):
         annotated_lines = self._exec('hg annotate -c %s' % file_path).splitlines()
