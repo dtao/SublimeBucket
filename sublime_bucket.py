@@ -291,9 +291,9 @@ class GitBackend(BackendBase):
 
         # First find the merge commit where the given commit was merged into
         # the default branch.
-        ancestry_path = self._exec('git rev-list %s --ancestry-path' %
+        ancestry_path = self._exec('git rev-list %s --ancestry-path --merges' %
                                    revspec).splitlines()
-        first_parent = self._exec('git rev-list %s --first-parent' %
+        first_parent = self._exec('git rev-list %s --first-parent --merges' %
                                   revspec).splitlines()
         common = set(ancestry_path) & set(first_parent)
         merge_revision = next(rev for rev in reversed(ancestry_path)
