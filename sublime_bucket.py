@@ -227,6 +227,11 @@ class BackendBase():
         """
         raise NotImplementedError
 
+    def find_current_branch(self):
+        """Get the name of the current branch.
+        """
+        raise NotImplementedError
+
     def get_default_branch(self):
         """Get the default branch for the current repo.
         """
@@ -275,15 +280,41 @@ class GitBackend(BackendBase):
 
         raise SublimeBucketError('Unable to get the current revision')
 
+    def find_current_branch(self):
+        info = self._exec('git branch').splitlines()
+        for line in info:
+            current_branch_match = re.match(r'\* (.*)', line)
+            if current_branch_match:
+                return current_branch_match.group(1)
+
+        raise SublimeBucketError('Unable to get the current branch')
+
     def find_selected_revision(self, file_path, current_line):
         output = self._exec(
             'git blame -L %d,%d %s' % (current_line, current_line, file_path))
         return re.match(r'^(\w+)', output).group(1)
 
     def get_default_branch(self):
+        # First try to figure out what the default branch is set to on the
+        # remote.
         remote = self.find_bitbucket_remote()
-        return self._exec('git rev-parse --abbrev-ref refs/remotes/%s/HEAD'
-                          % remote).strip()
+        try:
+            return self._exec('git rev-parse --abbrev-ref refs/remotes/%s/HEAD'
+                              % remote).strip()
+        except subprocess.CalledProcessError:
+            # The above can return w/ a 128 exit code and a message like:
+            # "unknown revision or path not in the working tree" ¯\_(ツ)_/¯
+            pass
+
+        # If we can't get the default branch from the remote, just try to get
+        # the *current* branch.
+        try:
+            return self.find_current_branch()
+        except SublimeBucketError:
+            pass
+
+        # As a fallback, just go with the git default.
+        return 'master'
 
     def get_merge_revision(self, target_revision):
         default_branch = self.get_default_branch()
@@ -325,6 +356,9 @@ class MercurialBackend(BackendBase):
 
     def find_current_revision(self):
         return self._exec('hg id -i').strip().rstrip('+')
+
+    def find_current_branch(self):
+        return self._exec('hg branch').strip()
 
     def find_selected_revision(self, file_path, current_line):
         annotated_lines = self._exec('hg annotate -c %s' % file_path).splitlines()
