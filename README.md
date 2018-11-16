@@ -64,7 +64,7 @@ Example keyboard shortcut:
 ### 4. Open in Issue Tracker
 
 Looks up the commit where the current line was last changed and opens the issue
-in your issue tracker (e.g., in JIRA) with which that change is associated.
+in your issue tracker (e.g., in Jira) with which that change is associated.
 
 See the [issue_trackers setting][2] for more information.
 
@@ -95,7 +95,7 @@ environment to this list.
 A list of issue trackers you use, to power the "Open in Issue Tracker" command.
 
 Each issue tracker type has its own style of configuration. Currently Bitbucket
-and JIRA are supported.
+and Jira are supported.
 
 #### Bitbucket
 
@@ -112,16 +112,16 @@ The Bitbucket tracker identifies links to Bitbucket issues in commit messages.
 }
 ```
 
-#### JIRA
+#### Jira
 
-The JIRA tracker identifies links to JIRA issues for a given instance and a
+The Jira tracker identifies links to Jira issues for a given instance and a
 specified list of project keys.
 
 ```
 {
   "type": "jira",
 
-  // The base URL (including https://) of the JIRA instance.
+  // The base URL (including https://) of the Jira instance.
   "host": "https://jira.company.com",
 
   // An array of project keys (e.g., ABC) for identifying issue references. For
