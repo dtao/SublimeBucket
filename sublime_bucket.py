@@ -197,7 +197,7 @@ class Remote():
         self.name = re.split(r'\s+', remote_match.string, maxsplit=1)[0]
 
         self.host = remote_match.group('host')
-        self.repo = remote_match.group('repo')
+        self.repo = re.sub(r'\.git$', '', remote_match.group('repo'))
 
 
 class BackendBase():
