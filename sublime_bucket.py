@@ -87,10 +87,10 @@ class OpenInBitbucketCommand(CommandBase, sublime_plugin.TextCommand):
         backend = self.get_backend()
 
         try:
-            remote_match = backend.find_bitbucket_remote_match()
+            remote = backend.find_bitbucket_remote()
             url = '%(host)s/%(repo)s/src/%(branch)s/%(path)s#%(hash)s' % {
-                'host': 'https://' + remote_match.group('host'),
-                'repo': remote_match.group('repo'),
+                'host': 'https://' + remote.host,
+                'repo': remote.repo,
                 'branch': backend.find_current_revision(),
                 'path': self.get_file_path(),
                 'hash': '%s-%s' % (os.path.basename(self.view.file_name()),
@@ -109,10 +109,10 @@ class OpenBitbucketChangesetCommand(CommandBase, sublime_plugin.TextCommand):
         backend = self.get_backend()
 
         try:
-            remote_match = backend.find_bitbucket_remote_match()
+            remote = backend.find_bitbucket_remote()
             url = '%(host)s/%(repo)s/commits/%(hash)s#chg-%(file)s' % {
-                'host': 'https://' + remote_match.group('host'),
-                'repo': remote_match.group('repo'),
+                'host': 'https://' + remote.host,
+                'repo': remote.repo,
                 'hash': backend.find_selected_revision(
                     self.get_file_path(), self.get_current_line()),
                 'file': self.get_file_path()
@@ -133,11 +133,11 @@ class FindBitbucketPullRequestCommand(CommandBase, sublime_plugin.TextCommand):
             target_revision = backend.find_selected_revision(
                 self.get_file_path(), self.get_current_line())
             pull_request_id = backend.get_pull_request_id(target_revision)
-            remote_match = backend.find_bitbucket_remote_match()
+            remote = backend.find_bitbucket_remote()
             url = ('https://%(host)s/%(repo)s/pull-requests/%(id)d/diff'
                    '#chg-%(file)s') % {
-                'host': remote_match.group('host'),
-                'repo': remote_match.group('repo'),
+                'host': remote.host,
+                'repo': remote.repo,
                 'id': pull_request_id,
                 'file': self.get_file_path()
             }
@@ -154,13 +154,14 @@ class OpenInIssueTrackerCommand(CommandBase, sublime_plugin.TextCommand):
         self.backend = self.get_backend()
 
         try:
-            remote_match = self.backend.find_bitbucket_remote_match()
+            remote = self.backend.find_bitbucket_remote()
 
             # For now just open the first issue key we find. In the future
             # maybe consider adding support for multiple issues.
             for (key, tracker) in self.get_issue_keys():
                 webbrowser.open(
-                    tracker.get_issue_url(key, **remote_match.groupdict()))
+                    tracker.get_issue_url(key, host=remote.host,
+                                          repo=remote.repo))
                 return
 
             raise SublimeBucketError('Unable to find any matching issue keys')
@@ -185,6 +186,20 @@ class OpenInIssueTrackerCommand(CommandBase, sublime_plugin.TextCommand):
                 yield issue_key, issue_tracker
 
 
+class Remote():
+    """Class representing a remote repository (e.g. 'origin').
+
+    Initialized with an _sre.SRE_MATCH object w/ `string` attribute referring
+    to the full remote string.
+    """
+    def __init__(self, remote_match):
+        # For both Git and Hg the remote name is the first token in the string.
+        self.name = re.split(r'\s+', remote_match.string, maxsplit=1)[0]
+
+        self.host = remote_match.group('host')
+        self.repo = remote_match.group('repo')
+
+
 class BackendBase():
     def __init__(self, cwd):
         self.cwd = cwd
@@ -194,11 +209,8 @@ class BackendBase():
         custom_hosts = load_settings().get('bitbucket_hosts', [])
         return list(set(['bitbucket.org'] + custom_hosts))
 
-    def find_bitbucket_remote_match(self):
-        """Get a regex match of the first remote containing a Bitbucket host.
-
-        Returns an _sre.SRE_MATCH object w/ `string` attribute referring to the
-        full remote string.
+    def find_bitbucket_remote(self):
+        """Get the first remote containing a Bitbucket host.
         """
         remotes = self.get_remote_list()
 
@@ -209,18 +221,10 @@ class BackendBase():
             for remote in remotes:
                 remote_match = re.search(bitbucket_pattern, remote)
                 if remote_match:
-                    return remote_match
+                    return Remote(remote_match)
 
         raise SublimeBucketError('Unable to find a remote matching: %r' %
                                  self.bitbucket_hosts)
-
-    def find_bitbucket_remote(self):
-        """Get the name of the remote (e.g. 'origin') pointing to Bitbucket.
-        """
-        remote_match = self.find_bitbucket_remote_match()
-
-        # For both Git and Hg the remote name is the first token in the string.
-        return re.split(r'\s+', remote_match.string, maxsplit=1)[0]
 
     def find_current_revision(self):
         """Get the hash of the commit/changeset that's currently checked out.
@@ -297,7 +301,7 @@ class GitBackend(BackendBase):
     def get_default_branch(self):
         # First try to figure out what the default branch is set to on the
         # remote.
-        remote = self.find_bitbucket_remote()
+        remote = self.find_bitbucket_remote().name
         try:
             return self._exec('git rev-parse --abbrev-ref refs/remotes/%s/HEAD'
                               % remote).strip()
