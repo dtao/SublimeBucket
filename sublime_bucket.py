@@ -216,8 +216,7 @@ class BackendBase():
 
         for host in self.bitbucket_hosts:
             bitbucket_pattern = (r'(?P<host>%s)[:/]'
-                                 r'(?P<repo>[\w\.\-]+/[\w\.\-]+)'
-                                 r'(?:\.git)?') % host
+                                 r'(?P<repo>[\w\.\-]+/[\w\.\-]+)') % host
             for remote in remotes:
                 remote_match = re.search(bitbucket_pattern, remote)
                 if remote_match:
